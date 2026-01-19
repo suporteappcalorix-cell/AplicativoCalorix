@@ -5,11 +5,12 @@ let ai: GoogleGenAI | null = null;
 
 // Esta função garante que o cliente de IA seja inicializado apenas quando necessário e se a chave existir.
 const getAiInstance = (): GoogleGenAI => {
-  if (!process.env.API_KEY) {
+  const apiKey = process?.env?.API_KEY;
+  if (!apiKey) {
     throw new Error("API_KEY_MISSING: A chave da API do Google Gemini não foi configurada no ambiente.");
   }
   if (!ai) {
-    ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    ai = new GoogleGenAI({ apiKey });
   }
   return ai;
 };

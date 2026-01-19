@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { UserProfile, DailyLog, Challenge, UserAchievements } from '../types';
 import { WEEKLY_CHALLENGES } from '../constants';
@@ -21,8 +20,10 @@ const ChallengesView: React.FC<ChallengesViewProps> = ({ profile, logs, onUpdate
     daysToComplete: 7
   });
 
+  // FIX: Added the missing 'badges' property to the default achievements object to match the UserAchievements type.
   const achievements: UserAchievements = profile.achievements || {
     medals: { gold: 0, silver: 0, bronze: 0 },
+    badges: [],
     completedChallenges: []
   };
 
