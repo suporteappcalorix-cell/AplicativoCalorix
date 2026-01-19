@@ -1,11 +1,23 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+let ai: GoogleGenAI | null = null;
+
+// Esta função garante que o cliente de IA seja inicializado apenas quando necessário e se a chave existir.
+const getAiInstance = (): GoogleGenAI => {
+  if (!process.env.API_KEY) {
+    throw new Error("API_KEY_MISSING: A chave da API do Google Gemini não foi configurada no ambiente.");
+  }
+  if (!ai) {
+    ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  }
+  return ai;
+};
 
 export async function getCoachAdvice(userData: string, prompt: string) {
   try {
-    const response = await ai.models.generateContent({
+    const aiInstance = getAiInstance(); // Carregamento preguiçoso e verificação da chave
+    const response = await aiInstance.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Contexto: Você é um nutricionista formado em Harvard e treinador de elite chamado Leo. Você está ajudando um usuário no aplicativo Calorix.
       Perfil e Contexto do Usuário: ${userData}
@@ -19,13 +31,17 @@ export async function getCoachAdvice(userData: string, prompt: string) {
     return response.text;
   } catch (error) {
     console.error("Erro no Gemini:", error);
+    if (error instanceof Error && error.message.startsWith("API_KEY_MISSING")) {
+      return "Erro de configuração: A chave da API não foi encontrada. O administrador precisa configurar a variável de ambiente API_KEY.";
+    }
     return "Desculpe, meu cérebro de Harvard está um pouco cansado agora. Tente novamente em instantes!";
   }
 }
 
 export async function analyzeFoodImage(base64Image: string) {
   try {
-    const response = await ai.models.generateContent({
+    const aiInstance = getAiInstance(); // Carregamento preguiçoso e verificação da chave
+    const response = await aiInstance.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: {
         parts: [
@@ -79,6 +95,10 @@ export async function analyzeFoodImage(base64Image: string) {
     return JSON.parse(jsonStr);
   } catch (error) {
     console.error("Erro ao analisar imagem:", error);
+    if (error instanceof Error && error.message.startsWith("API_KEY_MISSING")) {
+      // Re-lança um erro específico para a interface do usuário lidar com ele
+      throw new Error("A chave da API do Gemini não está configurada. Por favor, contate o suporte.");
+    }
     throw error;
   }
 }
