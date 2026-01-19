@@ -1,0 +1,8 @@
+{
+  "name": "Calorix - Harvard Weight Loss Coach",
+  "description": "A minimalist and powerful nutrition and fitness tracking application designed by Harvard experts for fast, sustainable weight loss with community features, recipes, and AI-driven coaching.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
