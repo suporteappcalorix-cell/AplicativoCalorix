@@ -381,6 +381,7 @@ const App: React.FC = () => {
               user={authUser}
               profile={userProfile}
               onUpdateProfile={handleUpdateProfile}
+              onNavigate={setCurrentView}
             />
           )}
           {currentView === 'challenges' && (

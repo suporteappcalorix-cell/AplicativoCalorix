@@ -53,6 +53,22 @@ export interface UserProfile {
   avatar?: string;
 }
 
+export interface ChatMessage {
+  id: string;
+  senderId: string;
+  text: string;
+  timestamp: number;
+  sharedPostId?: string;
+}
+
+export interface Conversation {
+  id: string;
+  participants: string[]; // IDs dos usuários
+  lastMessage?: string;
+  lastTimestamp?: number;
+  unreadCount: number;
+}
+
 export interface SmartNotificationSettings {
   enabled: boolean;
   frequency: 'high' | 'medium' | 'low';

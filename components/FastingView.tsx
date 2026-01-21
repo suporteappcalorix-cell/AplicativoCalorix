@@ -146,22 +146,25 @@ const FastingView: React.FC<FastingViewProps> = ({ state, onUpdate }) => {
             ))}
           </div>
 
-          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
+          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm overflow-hidden">
             <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
               <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
               Personalizado
             </h3>
-            <div className="flex gap-4">
-              <input 
-                type="number" 
-                className="flex-1 bg-slate-50 border-none rounded-2xl px-6 py-4 font-bold text-lg"
-                placeholder="Horas..."
-                value={customHours}
-                onChange={(e) => setCustomHours(e.target.value)}
-              />
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1">
+                <input 
+                  type="number" 
+                  className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-bold text-lg focus:ring-2 focus:ring-emerald-500 transition-all outline-none"
+                  placeholder="Ex: 12"
+                  value={customHours}
+                  onChange={(e) => setCustomHours(e.target.value)}
+                />
+                <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300 uppercase tracking-widest">Horas</span>
+              </div>
               <button 
                 onClick={() => startFasting(Number(customHours))}
-                className="px-8 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-800 transition-colors"
+                className="w-full sm:w-auto px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-slate-900/10"
               >
                 Iniciar
               </button>
