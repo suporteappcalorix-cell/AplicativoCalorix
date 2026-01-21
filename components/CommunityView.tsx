@@ -175,6 +175,35 @@ const CommunityView: React.FC<CommunityViewProps> = ({ user, profile, onUpdatePr
       };
     }));
   };
+
+  const handleDeleteComment = (postId: string, commentId: string) => {
+    const filterRecursively = (comments: PostComment[]): PostComment[] => {
+      return comments
+        .filter(c => c.id !== commentId)
+        .map(c => ({ ...c, replies: c.replies ? filterRecursively(c.replies) : [] }));
+    };
+
+    setPosts(prev => prev.map(p => {
+      if (p.id !== postId) return p;
+      return { ...p, comments: filterRecursively(p.comments || []) };
+    }));
+  };
+
+  const handleUpdateComment = (postId: string, commentId: string, newText: string) => {
+    const updateRecursively = (comments: PostComment[]): PostComment[] => {
+      return comments.map(c => {
+        if (c.id === commentId) {
+          return { ...c, text: newText };
+        }
+        return { ...c, replies: c.replies ? updateRecursively(c.replies) : [] };
+      });
+    };
+
+    setPosts(prev => prev.map(p => {
+      if (p.id !== postId) return p;
+      return { ...p, comments: updateRecursively(p.comments || []) };
+    }));
+  };
   
   const handleSavePost = (postId: string) => {
     const saved = profile.social?.savedPosts || [];
@@ -296,20 +325,101 @@ const CommunityView: React.FC<CommunityViewProps> = ({ user, profile, onUpdatePr
   const CommentThread: React.FC<{ comment: PostComment, postId: string, isReply?: boolean }> = ({ comment, postId, isReply = false }) => {
     const [isReplying, setIsReplying] = useState(false);
     const [replyTxt, setReplyTxt] = useState('');
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedText, setEditedText] = useState(comment.text);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    const isAuthor = comment.authorId === user.uid;
+
+    const handleSaveEdit = () => {
+      if (editedText.trim() && editedText.trim() !== comment.text) {
+        handleUpdateComment(postId, comment.id, editedText);
+      }
+      setIsEditing(false);
+    };
+
+    const handleStartEdit = () => {
+      setIsEditing(true);
+      setEditedText(comment.text);
+      setIsMenuOpen(false);
+    };
+
+    const handleCancelEdit = () => {
+      setIsEditing(false);
+      setEditedText(comment.text);
+    };
+
+    const handleDelete = () => {
+      if (window.confirm('Tem certeza que deseja excluir este comentário?')) {
+        handleDeleteComment(postId, comment.id);
+      }
+      setIsMenuOpen(false);
+    };
+
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+          setIsMenuOpen(false);
+        }
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     return (
       <div className={`flex gap-3 ${isReply ? 'mt-3 ml-8 sm:ml-10' : 'mt-4'}`}>
         <img src={comment.authorAvatar} className="w-8 h-8 rounded-full flex-shrink-0 object-cover border border-slate-100" />
         <div className="flex-1">
-          <div className="bg-slate-100 rounded-2xl px-4 py-2 inline-block max-w-full shadow-sm">
-            <p className="font-black text-[11px] text-slate-900">{comment.authorName}</p>
-            <p className="text-sm text-slate-700 leading-snug">{comment.text}</p>
-          </div>
-          <div className="flex items-center gap-4 mt-1 ml-2">
-            <button className="text-[10px] font-black text-slate-500 hover:underline">Curtir</button>
-            {!isReply && <button onClick={() => setIsReplying(!isReplying)} className="text-[10px] font-black text-slate-500 hover:underline">Responder</button>}
-            <span className="text-[10px] text-slate-300 font-medium">{new Date(comment.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-          </div>
+          {isEditing ? (
+            <div className="space-y-2">
+              <textarea
+                value={editedText}
+                onChange={(e) => setEditedText(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSaveEdit(); }
+                  if (e.key === 'Escape') handleCancelEdit();
+                }}
+                className="w-full bg-white border border-slate-300 rounded-xl p-2 text-sm focus:ring-1 focus:ring-blue-400"
+                autoFocus
+                rows={2}
+              />
+              <div className="flex gap-3 text-xs font-bold">
+                <button onClick={handleSaveEdit} className="text-blue-600 hover:underline">Salvar</button>
+                <button onClick={handleCancelEdit} className="text-slate-500 hover:underline">Cancelar</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="group relative bg-slate-100 rounded-2xl px-4 py-2 inline-block max-w-full shadow-sm">
+                <p className="font-black text-[11px] text-slate-900">{comment.authorName}</p>
+                <p className="text-sm text-slate-700 leading-snug whitespace-pre-wrap">{comment.text}</p>
+                {isAuthor && (
+                  <div ref={menuRef} className="absolute top-1 -right-2 translate-x-full">
+                    <button
+                      onClick={() => setIsMenuOpen(!isMenuOpen)}
+                      className="p-2 rounded-full text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-slate-200 focus:opacity-100 transition-opacity"
+                      aria-label="Opções do comentário"
+                    >
+                      <CommunityIcons.more className="w-4 h-4" />
+                    </button>
+                    {isMenuOpen && (
+                      <div className="absolute top-full right-0 mt-1 w-32 bg-white rounded-lg shadow-lg border border-slate-100 z-10 p-1 animate-in fade-in zoom-in-95 duration-200">
+                        <button onClick={handleStartEdit} className="w-full text-left px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 rounded">Editar</button>
+                        <button onClick={handleDelete} className="w-full text-left px-3 py-1.5 text-xs font-medium text-rose-500 hover:bg-rose-50 rounded">Excluir</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-4 mt-1 ml-2">
+                <button className="text-[10px] font-black text-slate-500 hover:underline">Curtir</button>
+                {!isReply && <button onClick={() => setIsReplying(!isReplying)} className="text-[10px] font-black text-slate-500 hover:underline">Responder</button>}
+                <span className="text-[10px] text-slate-300 font-medium">{new Date(comment.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+            </>
+          )}
+
           {isReplying && (
             <div className="mt-2 flex gap-2">
               <input
