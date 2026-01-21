@@ -47,6 +47,45 @@ const CommunityView: React.FC<CommunityViewProps> = ({ user, profile, onUpdatePr
   const [viewingPost, setViewingPost] = useState<Post | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    const hasOutdatedAvatar = posts.some(post => {
+      const postOutdated = post.authorId === user.uid && post.authorAvatar !== user.avatar;
+      if (postOutdated) return true;
+
+      const checkComments = (comments: PostComment[]): boolean => {
+        return comments.some(comment => {
+          if (comment.authorId === user.uid && comment.authorAvatar !== user.avatar) {
+            return true;
+          }
+          if (comment.replies) {
+            return checkComments(comment.replies);
+          }
+          return false;
+        });
+      };
+
+      return post.comments ? checkComments(post.comments) : false;
+    });
+
+    if (hasOutdatedAvatar) {
+      const updateCommentAvatars = (comments: PostComment[]): PostComment[] => {
+        return comments.map(comment => ({
+          ...comment,
+          authorAvatar: comment.authorId === user.uid ? (user.avatar || '') : comment.authorAvatar,
+          replies: comment.replies ? updateCommentAvatars(comment.replies) : undefined,
+        }));
+      };
+
+      setPosts(prevPosts =>
+        prevPosts.map(post => ({
+          ...post,
+          authorAvatar: post.authorId === user.uid ? (user.avatar || '') : post.authorAvatar,
+          comments: post.comments ? updateCommentAvatars(post.comments) : [],
+        }))
+      );
+    }
+  }, [user.avatar, user.uid, posts, setPosts]);
+
   const statusOptions = [
     { emoji: '💪', text: 'Me sentindo motivado(a)!' },
     { emoji: '🎉', text: 'Celebrando uma conquista!' },
